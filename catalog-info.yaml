@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: spring-petclinic
+  title: Spring PetClinic
+  description: Spring Boot reference application (PetClinic); Java/Maven. TrueNorth onboarded from spring-projects/spring-petclinic.
+  annotations:
+    github.com/project-slug: snoby-demo-org/spring-petclinic
+    backstage.io/source-location: url:https://github.com/snoby-demo-org/spring-petclinic/tree/main/
+  tags:
+    - java
+    - spring-boot
+spec:
+  type: service
+  lifecycle: production
+  owner: group:default/guests
+  system: goldenpath

@@ -1,0 +1,67 @@
+# TrueNorth pipeline configuration — spring-petclinic (brownfield Java repo)
+# Second real-project onboarding (after cpuminer-opt-cpupower): secrets/PII
+# required-class day one (FR-58/71, never deferrable); the Java build check
+# is required because the project has a canonical build (mvn package) that
+# must compile a JAR (and run the JUnit suite) on every commit.
+#
+#   mode: required  — always on, hard-stops on failure (FR-59/71)
+#   mode: blocking  — blocks unless a declared exception exists (FR-13)
+#   mode: advisory  — feeds the error budget, never blocks (FR-59/60)
+
+pipeline:
+  module: github.com/snoby-demo-org/dagger-checks@v1.0.6     # language-agnostic scans (pinned FR-14)
+  registry: zot.viporlab.net/demo
+
+planes:
+  build: k8s-runner
+  test: k8s-runner
+
+webhook:
+  cit_handoff:
+    enabled: false
+    url: ""
+    auth_secret: ""
+
+checks:
+  # ---- required class (day one, FR-58) ----
+  secrets-scan:      { enabled: true, mode: required, tier: fast, plane: build, applies: [any] }
+  pii-scan:          { enabled: true, mode: required, tier: fast, plane: build, applies: [any] }
+  # ---- BUILD LEG (not a scan check): resolve -> build via the Java module.
+  # DECLARED HOOKS (dagger-checks-java@v1.0.0): only the stages declared
+  # below run — presence-detection is ignored. `mvn package` runs the JUnit
+  # suite by default, so the build leg doubles as the unit-test gate.
+  # The digest handoff is optional (compile-only build produces a JAR,
+  # not an image) — parity with the cpuminer onboarding.
+  build:
+    enabled: true
+    mode: blocking
+    tier: fast
+    plane: build
+    applies: [java]
+    module: github.com/snoby-demo-org/dagger-checks-java@v1.0.0
+    # Declared build hooks — single-line commands, run via bash -c in /src.
+    hooks:
+      build: mvn -B -ntp package
+    # BUILD MATRIX (truenorth-v2.1): one parallel build pod per id; each runs
+    # the full chain resolve -> build on JDK base image temurin-<JAVA_VERSION>.
+    # The build check fails if ANY variant fails. Upstream targets Java 17
+    # (pom.xml <java.version>17</java.version>); 21 is forward-compat proof.
+    matrix:
+      temurin-17:
+        env:
+          JAVA_VERSION: "17"
+      temurin-21:
+        env:
+          JAVA_VERSION: "21"
+  private-key-check: { enabled: true, mode: required, tier: fast, plane: build, applies: [any] }
+  # ---- not applicable day one ----
+  # test plane: disabled — the build leg already runs the JUnit suite via
+  # `mvn package`; the test plane needs the digest handoff (FR-18/19), which
+  # is unimplemented for compile-only artifacts. Enable when that lands.
+  test:              { enabled: false, mode: blocking, tier: fast, plane: test,  applies: [any] }
+  # ---- future: enable as advisory with grace period (FR-12), then flip to blocking ----
+  lint:              { enabled: false, mode: advisory, tier: fast, plane: build, applies: [any] }
+  sast:              { enabled: false, mode: advisory, tier: fast, plane: build, applies: [any] }
+  format:            { enabled: false, mode: advisory, tier: fast, plane: build, applies: [any] }
+  coverage:          { enabled: false, mode: advisory, tier: fast, plane: build, applies: [any] }
+  sbom:              { enabled: false, mode: advisory, tier: fast, plane: build, applies: [any] }
