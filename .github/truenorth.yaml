@@ -27,7 +27,7 @@ checks:
   secrets-scan:      { enabled: true, mode: required, tier: fast, plane: build, applies: [any] }
   pii-scan:          { enabled: true, mode: required, tier: fast, plane: build, applies: [any] }
   # ---- BUILD LEG (not a scan check): resolve -> build via the Java module.
-  # DECLARED HOOKS (dagger-checks-java@v1.0.0): only the stages declared
+  # DECLARED HOOKS (dagger-checks-java@v1.0.1): only the stages declared
   # below run — presence-detection is ignored. `mvn package` runs the JUnit
   # suite by default, so the build leg doubles as the unit-test gate.
   # The digest handoff is optional (compile-only build produces a JAR,
@@ -38,7 +38,7 @@ checks:
     tier: fast
     plane: build
     applies: [java]
-    module: github.com/snoby-demo-org/dagger-checks-java@v1.0.0
+    module: github.com/snoby-demo-org/dagger-checks-java@v1.0.1
     # Declared build hooks — single-line commands, run via bash -c in /src.
     hooks:
       build: mvn -B -ntp package
